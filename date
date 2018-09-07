@@ -1,0 +1,1341 @@
+import {
+    animate, Component, ElementRef, EventEmitter, Input, keyframes, OnChanges,
+    OnInit, Output, Renderer, SimpleChange, state, style, transition, trigger
+} from '@angular/core';
+
+import { Calendar } from './calendar';
+import { AbstractControlDirective, AbstractControl } from '@angular/forms';
+import { MakeProvider, MakeValidetor, AbstractTagComponent } from '../../../src/app/customtags/core/helper/abstract-value-accessor';
+import { ResourceBundleComponent } from '../../../src/app/views/setup/ResourceBundle/ResourceBundle.component';
+import * as moment from 'moment';
+
+@Component( {
+    selector: 'material-datepicker',
+    styles: [
+        `.datepicker {
+        position: relative;
+        display: inline-block;
+        color: #2b2b2b;
+        font-family: 'Helvetica Neue', 'Helvetica', 'Arial', 'Calibri', 'Roboto';
+      }
+.custom_datepicker__calendar {
+        position: absolute;
+        overflow: hidden;
+        z-index: 40;
+        top: -21.4em;
+        left: 0;
+        height: 21.25em;
+        width: 20.5em;
+        font-size: 14px;
+        background-color: #ffffff;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+        cursor: default;
+        -webkit-touch-callout: none;
+          -webkit-user-select: none;
+             -moz-user-select: none;
+              -ms-user-select: none;
+                  user-select: none;
+      }
+      .datepicker__calendar {
+        position: absolute;
+        overflow: hidden;
+        z-index: 40;
+        top: 1.9em;
+        left: 0;
+        height: 21.25em;
+        width: 20.5em;
+        font-size: 14px;
+        background-color: #ffffff;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+        cursor: default;
+        -webkit-touch-callout: none;
+          -webkit-user-select: none;
+             -moz-user-select: none;
+              -ms-user-select: none;
+                  user-select: none;
+      }
+
+      .datepicker__calendar__cancel {
+        position: absolute;
+        bottom: 1em;
+        left: 1.8em;
+        color: #d8d8d8;
+        cursor: pointer;
+        -webkit-transition: 0.37s;
+        transition: 0.37s;
+      }
+
+      .datepicker__calendar__cancel:hover {
+        color: #b1b1b1;
+      }
+
+      .datepicker__calendar__content {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-flow: wrap;
+            flex-flow: wrap;
+        -webkit-box-pack: center;
+           -ms-flex-pack: center;
+         justify-content: center;
+        margin-top: 0.2em;
+      }
+
+      .datepicker__calendar__label {
+        display: inline-block;
+        width: 2.2em;
+        height: 2.2em;
+        margin: 0.2em;
+        line-height: 2.2em;
+        text-align: center;
+        color: #d8d8d8;
+      }
+
+      .datepicker__calendar__month {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-flow: wrap;
+            flex-flow: wrap;
+        -webkit-box-pack: center;
+           -ms-flex-pack: center;
+         justify-content: space-around;
+
+      }
+
+      .datepicker__calendar__month__day {
+        display: inline-block;
+        width: 2.2em;
+        height: 2.2em;
+        margin: 0.2em;
+        border-radius: 2.2em;
+        line-height: 2.2em;
+        text-align: center;
+        -webkit-transition: 0.37s;
+        transition: 0.37s;
+      }
+
+      .datepicker__calendar__nav {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-pack: center;
+           -ms-flex-pack: center;
+         justify-content: center;
+        -webkit-box-align: center;
+           -ms-flex-align: center;
+              align-items: center;
+        height: 3em;
+        color: #fff;
+        background-color:#1285bf;
+        border-bottom: 1px solid #e8e8e8;
+      }
+
+      .datepicker__calendar__nav__arrow {
+        width: 0.8em;
+        height: 0.8em;
+        cursor: pointer;
+        -webkit-transition: 0.37s;
+        transition: 0.37s;
+      }
+
+      .datepicker__calendar__nav__arrow:hover {
+        -webkit-transform: scale(1.05);
+                transform: scale(1.05);
+      }
+
+      .datepicker__calendar__nav__chevron {
+        fill: #bbbbbb;
+        -webkit-transition: 0.37s;
+        transition: 0.37s;
+      }
+
+      .datepicker__calendar__nav__chevron:hover {
+        fill: #2b2b2b;
+      }
+
+      .datepicker__calendar__nav__header {
+        width: 11em;
+        margin: 0 1em;
+        text-align: center;
+      }
+
+      .datepicker__input {
+        outline: none;
+        border-radius: 0.1rem;
+        padding: .2em .6em;
+        font-size: 14px;
+        height: 29px;
+      }
+    .monthPadding span {
+        cursor: pointer;
+    background-color: rgb(18, 133, 191);
+    color: rgb(255, 255, 255);
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-bottom: 12px;
+    margin-top: 12px;
+     }
+      .col-md-4 {
+         width: 25.333333% !important;
+      }
+    `
+    ],
+    template: `
+<div class="{{tagDivClass}}" >
+    <div
+      class="datepicker"
+      [ngStyle]="{'font-family': fontFamily}"
+    >
+<div class="input-group">
+<div *ngIf="!disabled" class="input-group-addon handPointer" (click)="onInputClick()">
+<i class="fa fa-calendar "></i>
+</div>
+ <div *ngIf="disabled" class="input-group-addon">
+<i class="fa fa-calendar "></i>
+</div>
+      <input
+        id="{{id}}"
+        autocomplete="off"
+        [disabled]="disabled"
+        appOnlyDateFormat="true"
+        class="datepicker__input"
+        [placeholder]="placeholder"
+        [required]="required"
+        [ngStyle]="{'color': altInputStyle ? colors['white'] : colors['black'],
+                    'background-color': altInputStyle ? accentColor : colors['white'],
+                    'border': altInputStyle ? '' : '1px solid #dadada'}"
+        (click)="closeCal()"
+        (input)="desibleSetDate()"
+        (keydown.tab)="onTab()"
+        (keydown.enter)="onTab()"
+        (keyup)="onKeyupDate()"
+        (focus)="onFocus.emit($event)"
+        (blur)="onBlur($event); onTab()"
+        [(ngModel)]="dateInputText"
+       (ngModelChange)="inputText = dateInputText"
+        maxlength="10"
+      ></div>
+<div *ngIf="required">
+<ul *ngIf="(this.control && this.control.errors && (this.control.dirty || this.control.touched ))">
+<li style="color: red" *ngFor="let error of listOfErrors(); let i=index"><div *ngIf="i==0">{{error}}</div></li>
+</ul></div>
+      <div
+        [ngClass]="(customClass === 'true') ? 'custom_datepicker__calendar' : 'datepicker__calendar'"
+        *ngIf="showCalendar"
+      >
+        <div class="datepicker__calendar__nav">
+          <div *ngIf="!monthView"
+            class="datepicker__calendar__nav__arrow"
+            (click)="yearView === false ? onArrowLeftClick() : generateYearList('prev')"
+          >
+          <svg class="datepicker__calendar__nav__chevron" x="0px" y="0px" viewBox="0 0 50 50">
+            <g>
+                <path d="M39.7,7.1c0.5,0.5,0.5,1.2,0,1.7L29,19.6c-0.5,0.5-1.2,1.2-1.7,1.7L16.5,32.1c-0.5,0.5-1.2,0.5-1.7,0l-2.3-2.3
+                    c-0.5-0.5-1.2-1.2-1.7-1.7l-2.3-2.3c-0.5-0.5-0.5-1.2,0-1.7l10.8-10.8c0.5-0.5,1.2-1.2,1.7-1.7L31.7,0.8c0.5-0.5,1.2-0.5,1.7,0
+                    l2.3,2.3c0.5,0.5,1.2,1.2,1.7,1.7L39.7,7.1z"/>
+            </g>
+            <g>
+                <path d="M33.4,49c-0.5,0.5-1.2,0.5-1.7,0L20.9,38.2c-0.5-0.5-1.2-1.2-1.7-1.7L8.4,25.7c-0.5-0.5-0.5-1.2,0-1.7l2.3-2.3
+                    c0.5-0.5,1.2-1.2,1.7-1.7l2.3-2.3c0.5-0.5,1.2-0.5,1.7,0l10.8,10.8c0.5,0.5,1.2,1.2,1.7,1.7l10.8,10.8c0.5,0.5,0.5,1.2,0,1.7
+                    L37.4,45c-0.5,0.5-1.2,1.2-1.7,1.7L33.4,49z"/>
+            </g>
+          </svg>
+          </div>
+          <div class="datepicker__calendar__nav__header handPointer" (click)="selectMonth(headerContent)">
+            {{ headerContent }}
+          </div>
+          <div *ngIf="!monthView"
+            class="datepicker__calendar__nav__arrow"
+            (click)="yearView === false ? onArrowRightClick() : generateYearList('next')"
+          >
+            <svg class="datepicker__calendar__nav__chevron" x="0px" y="0px" viewBox="0 0 50 50">
+              <g>
+                <path d="M8.4,7.1c-0.5,0.5-0.5,1.2,0,1.7l10.8,10.8c0.5,0.5,1.2,1.2,1.7,1.7l10.8,10.8c0.5,0.5,1.2,0.5,1.7,0l2.3-2.3
+                    c0.5-0.5,1.2-1.2,1.7-1.7l2.3-2.3c0.5-0.5,0.5-1.2,0-1.7L29,13.2c-0.5-0.5-1.2-1.2-1.7-1.7L16.5,0.8c-0.5-0.5-1.2-0.5-1.7,0
+                    l-2.3,2.3c-0.5,0.5-1.2,1.2-1.7,1.7L8.4,7.1z"/>
+              </g>
+              <g>
+                <path d="M14.8,49c0.5,0.5,1.2,0.5,1.7,0l10.8-10.8c0.5-0.5,1.2-1.2,1.7-1.7l10.8-10.8c0.5-0.5,0.5-1.2,0-1.7l-2.3-2.3
+                    c-0.5-0.5-1.2-1.2-1.7-1.7l-2.3-2.3c-0.5-0.5-1.2-0.5-1.7,0L20.9,28.5c-0.5,0.5-1.2,1.2-1.7,1.7L8.4,40.9c-0.5,0.5-0.5,1.2,0,1.7
+                    l2.3,2.3c0.5,0.5,1.2,1.2,1.7,1.7L14.8,49z"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div
+          class="datepicker__calendar__content"
+        *ngIf="!monthView && !yearView">
+          <div
+            class="datepicker__calendar__label"
+            *ngFor="let day of dayNames"
+          >
+            {{ day }}
+          </div>
+          <div
+            class="datepicker__calendar__month"
+          >
+            <div
+              *ngFor="let day of calendarDays"
+              class="datepicker__calendar__month__day"
+              [ngStyle]="{'cursor': day == 0 ? 'initial' : 'pointer',
+                          'background-color': getDayBackgroundColor(day),
+                          'color': isHoveredDay(day) ? accentColor : getDayFontColor(day),
+                          'pointer-events': day == 0 ? 'none' : ''
+                          }"
+              (click)="onSelectDay(day)"
+              (mouseenter)="hoveredDay = day"
+              (mouseleave)="hoveredDay = null"
+            >
+              <span *ngIf="day != 0">
+                {{ day.getDate() }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="datepicker__calendar__content"
+             *ngIf="monthView">
+           <div class="datepicker__calendar__month col-md-12">
+              <div class="col-md-4 monthPadding"
+                   *ngFor="let month of showMonths"
+                   (click)="setMonth(month)">
+                 <span *ngIf="month" [ngStyle]="{'cursor': month.id == 0 ? 'initial' : 'pointer',
+                'background-color': getMonthBackgroundColor(month.id - 1),
+                'color': isHoveredMonth(month.id - 1) ? accentColor : getMonthFontColor(month.id - 1),
+                'pointer-events': month.id == 0 ? 'none' : ''
+                }">{{month.month}}</span>
+              </div>
+           </div>
+        </div>
+
+
+       <div class="datepicker__calendar__content"
+           *ngIf="yearView">
+         <div class="datepicker__calendar__month col-md-12">
+            <div class="col-md-4 monthPadding"
+              *ngFor="let year of yearsList"
+              (click)="setYear(year)">
+              <span *ngIf="year" [ngStyle]="{'cursor': year == 0 ? 'initial' : 'pointer',
+                'background-color': getYearBackgroundColor(year),
+                'color': isHoveredYear(year) ? accentColor : getYearFontColor(year),
+                'pointer-events': year == 0 ? 'none' : ''
+                }"> {{year}} </span>
+           </div>
+         </div>
+       </div>
+
+
+      </div>
+    </div>
+    `,
+    providers: [
+        MakeProvider( DatepickerComponent ),
+        MakeValidetor( DatepickerComponent )]
+} )
+export class DatepickerComponent extends AbstractTagComponent implements OnInit, OnChanges {
+    private dateVal: Date;
+
+    // two way bindings
+    @Output() dateChange = new EventEmitter<Date>();
+
+    @Input() get date(): Date { return this.dateVal; }
+    set date( val: Date ) {
+        this.dateVal = val;
+        this.dateChange.emit( val );
+    }
+
+    // api bindings
+    //   @Input() disabled: boolean;
+    @Input() accentColor: string;
+    @Input() altInputStyle: boolean;
+    @Input() dateFormat: string;
+    @Input() fontFamily: string;
+    @Input() rangeStart: Date;
+    @Input() rangeEnd: Date;
+    // data
+    // @Input() placeholder = 'Select a date';
+    @Input() dateInputText: string;
+    // view logic
+    @Input() showCalendar: boolean;
+    // events
+    @Output() onSelectModel = new EventEmitter<Date>();
+    @Output() onSelect = new EventEmitter<Date>();
+    // time
+    @Input() calendarDays: Array<number>;
+    @Input() calendarMonths: Array<string>;
+    @Input() calendarYears: Array<number>;
+    @Input() currentMonth: string;
+    @Input() dayNames: Array<String>;
+    @Input() hoveredDay: Date;
+    @Input() required: any;
+    @Input() id: any;
+    calendar: Calendar;
+    currentMonthNumber: number;
+    currentYear: number;
+    months: Array<string>;
+    showMonths: Array<any>;
+    headerContent: any;
+    yearsList: Array<any> = [];
+    // animation
+    animate: string;
+    // colors
+    colors: { [id: string]: string };
+    // listeners
+    clickListener: Function;
+
+    private labelDec: any;
+
+    monthView: boolean;
+    yearView = false;
+    _desibleSetDateFlag: boolean;
+    _customClass: any;
+
+    @Input()
+    public control: AbstractControlDirective | AbstractControl;
+
+
+    constructor( private renderer: Renderer, private elementRef: ElementRef, private resourceBundle: ResourceBundleComponent ) {
+        super();
+        this.dateFormat = 'MM-DD-YYYY';
+        // view logic
+        this.showCalendar = false;
+        // colors
+        this.colors = {
+            'black': '#333333',
+            'blue': '#1285bf',
+            'lightGrey': '#f1f1f1',
+            'white': '#ffffff'
+        };
+        this.accentColor = this.colors['blue'];
+        this.altInputStyle = false;
+        // time
+        this.calendar = new Calendar();
+        this.dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        this.months = [
+            'January', 'February', 'March', 'April', 'May', 'June', 'July',
+            'August', 'September', 'October', 'November', ' December'
+        ];
+        this.showMonths = [
+            { id: 1, month: 'JAN' }, { id: 2, month: 'FEB' }, { id: 3, month: 'MAR' }, { id: 4, month: 'APR' }, { id: 5, month: 'MAY' },
+            { id: 6, month: 'JUN' }, { id: 7, month: 'JUL' }, { id: 8, month: 'AUG' }, { id: 9, month: 'SEP' }, { id: 10, month: 'OCT' },
+            { id: 11, month: 'NOV' }, { id: 12, month: 'DEC' }
+        ];
+        // listeners
+        this.clickListener = renderer.listenGlobal( 'document', 'mouseup', ( event: MouseEvent ) => this.handleGlobalClick( event ) );
+    }
+
+    ngOnInit() {
+        this.setDate();
+    }
+
+    ngOnChanges( changes: { [propertyName: string]: SimpleChange } ) {
+        if ( ( changes['date'] || changes['dateFormat'] ) ) {
+            if ( !this._desibleSetDateFlag ) {
+                this.setDate();
+            }
+        }
+    }
+
+    ngOnDestroy() {
+        this.clickListener();
+    }
+
+    // State Management
+    // ------------------------------------------------------------------------------------
+    @Input() public get customClass(): any {
+        return this._customClass;
+    }
+    public set customClass( value: any ) {
+        if ( value != null ) {
+            this._customClass = value;
+        }
+    }
+    closeCalendar(): void {
+        this.showCalendar = false;
+        this.setDate();
+    }
+
+    closeCal(): void {
+        this.showCalendar = false;
+    }
+
+    private setCurrentValues( date: Date ) {
+        date = new Date( date );
+        this.currentMonthNumber = date.getMonth();
+        this.currentMonth = this.months[this.currentMonthNumber];
+        this.currentYear = date.getFullYear();
+        const calendarArray = this.calendar.monthDays( this.currentYear, this.currentMonthNumber );
+        this.calendarDays = [].concat.apply( [], calendarArray );
+    }
+
+    setDate(): void {
+        if ( this.date ) {
+            this.setInputText( this.date );
+            this.setCurrentValues( this.date );
+        } else {
+            this.dateInputText = '';
+            this.setCurrentValues( new Date() );
+        }
+    }
+
+    setCurrentMonth( monthNumber: number ) {
+        this.currentMonthNumber = monthNumber;
+        this.currentMonth = this.months[monthNumber];
+        const calendarArray = this.calendar.monthDays( this.currentYear, this.currentMonthNumber );
+        this.calendarDays = [].concat.apply( [], calendarArray );
+        this.headerContent = this.currentMonth + ' ' + this.currentYear;
+    }
+
+    setYear( year ) {
+        this.currentYear = year;
+        this.headerContent = this.currentYear;
+        this.yearView = false;
+        this.monthView = true;
+    }
+    setHoveredDay( day: Date ): void {
+        this.hoveredDay = day;
+    }
+
+    removeHoveredDay( day: Date ): void {
+        this.hoveredDay = null;
+    }
+
+    setInputText( date: Date ): void {
+        date = new Date( date );
+        let month: string = ( date.getMonth() + 1 ).toString();
+        if ( month.length < 2 ) {
+            month = `0${month}`;
+        }
+        let day: string = ( date.getDate() ).toString();
+        if ( day.length < 2 ) {
+            day = `0${day}`;
+        }
+
+        let inputText: string;
+        switch ( this.dateFormat.toUpperCase() ) {
+            case 'YYYY-MM-DD':
+                inputText = `${date.getFullYear()}/${month}/${day}`;
+                break;
+            case 'MM-DD-YYYY':
+                inputText = `${month}/${day}/${date.getFullYear()}`;
+                break;
+            case 'DD-MM-YYYY':
+                inputText = `${day}/${month}/${date.getFullYear()}`;
+                break;
+            default:
+                inputText = `${date.getFullYear()}/${month}/${day}`;
+                break;
+        }
+
+        this.dateInputText = inputText;
+        this.dateChange.emit( date );
+        this.onSelect.emit( date );
+    }
+    desibleSetDate() {
+        this._desibleSetDateFlag = true;
+    }
+
+    // Click Handlers
+    // ------------------------------------------------------------------------------------
+    selectMonth( value ) {
+        if ( typeof value === 'string' ) {
+            this.monthView = true;
+            this.headerContent = this.currentYear;
+        } else if ( typeof value === 'number' ) {
+            this.generateYearList( '' );
+            this.monthView = false;
+            this.yearView = true;
+        }
+    }
+    onArrowLeftClick(): void {
+        const currentMonth: number = this.currentMonthNumber;
+        let newYear: number = this.currentYear;
+        let newMonth: number;
+
+        if ( currentMonth === 0 ) {
+            newYear = this.currentYear - 1;
+            newMonth = 11;
+        } else {
+            newMonth = currentMonth - 1;
+        }
+
+        const newDate = new Date( newYear, newMonth );
+        if ( !this.rangeStart || newDate.getTime() >= this.rangeStart.getTime() ) {
+            this.currentYear = newYear;
+            this.currentMonthNumber = newMonth;
+            this.setCurrentMonth( newMonth );
+            this.triggerAnimation( 'left' );
+        }
+    }
+
+    onArrowRightClick(): void {
+        const currentMonth: number = this.currentMonthNumber;
+        let newYear: number = this.currentYear;
+        let newMonth: number;
+
+        if ( currentMonth === 11 ) {
+            newYear = this.currentYear + 1;
+            newMonth = 0;
+        } else {
+            newMonth = currentMonth + 1;
+        }
+
+        const newDate = new Date( newYear, newMonth );
+        if ( !this.rangeEnd || newDate.getTime() <= this.rangeEnd.getTime() ) {
+            this.currentYear = newYear;
+            this.currentMonthNumber = newMonth;
+            this.setCurrentMonth( newMonth );
+            this.triggerAnimation( 'right' );
+        }
+    }
+
+    onCancel(): void {
+        this.closeCalendar();
+    }
+
+    onInputClick(): void {
+        this.showCalendar = !this.showCalendar;
+        this.monthView = false;
+        this.yearView = false;
+        this.headerContent = this.currentMonth + ' ' + this.currentYear;
+    }
+
+    onTab() {
+        let date;
+        date = this.dateInputText;
+        let flag = true;
+        let day;
+        let month;
+        let year;
+        if ( this.dateInputText !== undefined && ( this.dateInputText.length >= 8 && this.dateInputText.length <= 10 ) ) {
+            const res = date.split( '/' );
+            if ( res.length > 1 ) {
+                month = res[0];
+                day = res[1];
+                year = res[2];
+            }
+
+            if ( isNaN( month ) || isNaN( day ) || isNaN( year ) ) {
+                flag = false;
+            }
+            month = Number( month );
+            day = Number( day );
+            year = Number( year );
+            if ( month < 1 || month > 12 ) { // check month range
+                flag = false;
+            }
+            if ( day < 1 || day > 31 ) {
+                flag = false;
+            }
+            if ( ( month === 4 || month === 6 || month === 9 || month === 11 ) && day === 31 ) {
+                flag = false;
+            }
+            if ( month === 2 ) { // check for february 29th
+                const isleap = ( year % 4 === 0 && ( year % 100 !== 0 || year % 400 === 0 ) );
+                if ( day > 29 || ( day === 29 && !isleap ) ) {
+                    flag = false;
+                }
+            }
+            date = new Date( this.dateInputText );
+            month = ( date.getMonth() + 1 ).toString();
+            if ( month.length < 2 ) {
+                month = `0${month}`;
+            }
+            day = ( date.getDate() ).toString();
+            if ( day.length < 2 ) {
+                day = `0${day}`;
+            }
+            if ( day.length === 2 && month.length === 2 && date.getFullYear().toString().length === 4
+                && this.dateInputText.length >= 8 && flag ) {
+                this.date = new Date( this.inputText );
+                this.setDate();
+                this.inputText = new Date( this.setDateText( date ) );
+                this.onSelect.emit( date );
+                this._desibleSetDateFlag = false;
+            } else {
+                // this.inputText = this.inputText;
+            }
+        }
+        this.showCalendar = false;
+    }
+
+    setDateText( date: Date ): string {
+        date = new Date( date );
+        let month: string = ( date.getMonth() + 1 ).toString();
+        if ( month.length < 2 ) {
+            month = `0${month}`;
+        }
+        let day: string = ( date.getDate() ).toString();
+        if ( day.length < 2 ) {
+            day = `0${day}`;
+        }
+        const result = `${month}/${day}/${date.getFullYear()}`;
+        return result;
+    }
+
+    onKeyupDate(): void {
+        this.showCalendar = false;
+    }
+
+    onSelectDay( day: Date ): void {
+        this.date = day;
+        this.inputText = new Date( this.setDateText( day ) );
+        this.setInputText( day );
+        this.onSelect.emit( day );
+        this.onSelectModel.emit( day );
+        this.showCalendar = !this.showCalendar;
+        this._desibleSetDateFlag = false;
+    }
+
+    generateYearList( param: string ) {
+        const date = new Date( this.date );
+        let startYear = null;
+        let currentYear = null;
+        if ( param === 'next' ) {
+            startYear = this.yearsList[11] + 1;
+            currentYear = date.getFullYear();
+        } else if ( param === 'prev' ) {
+            startYear = this.yearsList[0] - 12;
+            currentYear = date.getFullYear();
+        } else {
+            if ( this.date ) {
+                currentYear = date.getFullYear();
+            } else {
+                currentYear = new Date().getFullYear();
+            }
+            startYear = currentYear - 4;
+        }
+        for ( let k = 0; k < 12; k++ ) {
+            this.yearsList[k] = startYear + k;
+        }
+        const endYear = startYear + 11;
+        this.headerContent = startYear + ' - ' + endYear;
+    }
+
+    setMonth( month ) {
+        this.setCurrentMonth( month.id - 1 );
+        this.monthView = false;
+        this.yearView = false;
+        this.showCalendar = true;
+    }
+
+    // Listeners
+    // ------------------------------------------------------------------------------------
+    handleGlobalClick( event: MouseEvent ): void {
+        if ( !this.elementRef.nativeElement.contains( event.target ) ) {
+            this.showCalendar = false;
+            this._desibleSetDateFlag = false;
+        }
+    }
+
+    // Helpers
+    // ------------------------------------------------------------------------------------
+    getDayBackgroundColor( day: Date ): string {
+        let color = this.colors['white'];
+        if ( this.isChosenDay( day ) ) {
+            color = this.accentColor;
+        } else if ( this.isCurrentDay( day ) ) {
+            color = this.colors['lightGrey'];
+        }
+        return color;
+    }
+
+    getMonthBackgroundColor( monthNumber ): string {
+        let color = this.colors['white'];
+        if ( this.isChosenMonth( monthNumber ) ) {
+            color = this.accentColor;
+        } else if ( this.isCurrentMonth( monthNumber ) ) {
+            color = this.colors['lightGrey'];
+        }
+        return color;
+    }
+
+    getYearBackgroundColor( year ): string {
+        let color = this.colors['white'];
+        if ( this.isChosenYear( year ) ) {
+            color = this.accentColor;
+        } else if ( this.isCurrentYear( year ) ) {
+            color = this.colors['lightGrey'];
+        }
+        return color;
+    }
+
+    getDayFontColor( day: Date ): string {
+        let color = this.colors['black'];
+        if ( this.isChosenDay( day ) ) {
+            color = this.colors['white'];
+        }
+        return color;
+    }
+
+    getMonthFontColor( monthNumber ): string {
+        let color = this.colors['black'];
+        if ( this.isChosenMonth( monthNumber ) ) {
+            color = this.colors['white'];
+        }
+        return color;
+    }
+
+    getYearFontColor( year ): string {
+        let color = this.colors['black'];
+        if ( this.isChosenYear( year ) ) {
+            color = this.colors['white'];
+        }
+        return color;
+    }
+
+    isChosenDay( day: Date ): boolean {
+        const date = new Date( this.date );
+        if ( day ) {
+            return this.date ? day.toDateString() == date.toDateString() : false;
+        } else {
+            return false;
+        }
+    }
+    isChosenMonth( monthNumber ): boolean {
+        const date = new Date( this.date );
+        if ( !this.date ) {
+            return false;
+        }
+
+        if ( this.currentMonth ) {
+            return this.currentMonth ? this.months[monthNumber] == this.months[date.getMonth()] : false;
+        } else {
+            return false;
+        }
+    }
+
+    isChosenYear( year ): boolean {
+        const date = new Date( this.date );
+        if ( !this.date ) {
+            return false;
+        }
+
+        if ( year ) {
+            return year ? year == date.getFullYear() : false;
+        } else {
+            return false;
+        }
+    }
+
+    isCurrentDay( day: Date ): boolean {
+        if ( day ) {
+            return day.toDateString() == new Date().toDateString();
+        } else {
+            return false;
+        }
+    }
+
+    isCurrentMonth( monthNumber ): boolean {
+        if ( this.currentMonth ) {
+            return this.currentMonth ? this.months[monthNumber] == this.months[new Date().getMonth()] : false;
+        } else {
+            return false;
+        }
+    }
+
+    isCurrentYear( year ): boolean {
+        if ( year ) {
+            return year ? year == new Date().getFullYear() : false;
+        } else {
+            return false;
+        }
+    }
+
+    isHoveredDay( day: Date ): boolean {
+        return this.hoveredDay ? this.hoveredDay == day && !this.isChosenDay( day ) : false;
+    }
+
+    isHoveredMonth( monthNumber ): boolean {
+        const hoveredDate = new Date( this.hoveredDay );
+        return hoveredDate.getMonth() ? this.months[hoveredDate.getMonth()] == this.months[monthNumber] && !this.isChosenMonth( monthNumber ) : false;
+    }
+
+    isHoveredYear( year ): boolean {
+        const hoveredDate = new Date( this.hoveredDay );
+        return year ? hoveredDate.getFullYear() == year && !this.isChosenYear( year ) : false;
+    }
+
+    triggerAnimation( direction: string ): void {
+        this.animate = direction;
+        setTimeout(() => this.animate = 'reset', 185 );
+    }
+
+    shouldShowErrors(): boolean {
+        return this.control &&
+            this.control.errors &&
+            ( this.control.dirty || this.control.touched );
+    }
+
+    listOfErrors(): string[] {
+        return Object.keys( this.control.errors )
+            .map( field => this.getMessage( field, this.control.errors[field] ) );
+    }
+
+    private getMessage( type: string, params: any ) {
+        return AbstractTagComponent.errorMessages[type]( params );
+    }
+}
+
+
+
+
+
+
+
+
+
+ABSTRACT
+
+
+
+
+
+
+// this file helps all custom components common functionality implementation.
+// all custom components are extends this file and use this functionality.
+
+//  @author K.Anand.
+
+import {
+    ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, FormControl,
+    Validator, AbstractControlDirective, AbstractControl
+} from '@angular/forms';
+import { forwardRef, Input, Output, EventEmitter, Component, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { CustomTagService } from './custom-tag-service';
+import { Router } from '@angular/router/router';
+import { ResourceBundleComponent } from '../../../views/setup/ResourceBundle/ResourceBundle.component';
+
+// on touched, on changes call back default function.
+const noop = () => {
+};
+
+@Component( {
+    providers: [
+        MakeProvider( AbstractTagComponent ),
+        MakeValidetor( AbstractTagComponent )],
+} )
+export abstract class AbstractTagComponent implements ControlValueAccessor, Validator {
+
+    // error messages model for showing errors
+    // before loading components this error messages model is available ready to use
+    public static readonly errorMessages = {
+        'required': () => 'This field is required.',
+        'minlength': ( params ) => 'The min number of characters is ' + params.requiredLength + '.',
+        'maxlength': ( params ) => 'The max allowed number of characters is ' + params.requiredLength + '.',
+        'pattern': ( params ) => 'The required pattern is: ' + params.requiredPattern,
+        'telephoneNumber': ( params ) => params.message + '.',
+        'customMessage': ( params ) => params.message,
+        'emailPattern': ( params ) => params.message + '.',
+        'alpha': ( params ) => params.message,
+        'patternTemplate': ( params ) => params.message,
+        'date': ( params ) => params.message
+    };
+
+    @ViewChild( 'tagModelElement' ) inputElement: ElementRef;
+
+    // The internal data models start..
+    _value: any = '';
+    private data: any;
+    private _type: any;
+    private parseError: boolean;
+    public inputTextValue: any;
+    private _labelId: any;
+    private _pattern: any;
+    private inputLabel: any;
+    private inputLabelAlignment = null;
+    private inputTagClass: any;
+    private _divClassValue: any;
+    private inputLabelStyle: any;
+    private _id: any;
+    private tagDivClassValue: any;
+    private minLengthValue: any;
+    private maxLengthValue: any;
+    private nameValue: any;
+    private labelDivClassValue: any;
+    private _maxValue: any;
+    private _isRequired = false;
+    private _labelValue: any;
+    private _disabled: any;
+    public asterisk = false;
+    private _propertyId: any;
+    private _referId: any;
+    // The internal data models end..
+
+    // Placeholder's for the callbacks which are later provided
+    // by the Control Value Accessor
+    private onTouchedCallback: () => void = noop;
+    private onChangeCallback: ( _: any ) => void = noop;
+
+    // set and get accessor
+    @Input() placeholder = '';
+
+    // get accessor
+    @Input() get value(): any {
+        return this._value;
+    }
+    // set accessor including when ngModel dos'nt have data by default set the what have value attribute.
+    set value( v: any ) {
+        if ( v != null ) {
+            this._value = v;
+            if ( this.inputTextValue === undefined ) {
+                this.inputTextValue = v;
+            }
+        }
+    }
+
+    // get accessor
+    @Input() public get inputText(): any {
+        return this.inputTextValue;
+    }
+    // set accessor including call the on-change callback
+    public set inputText( text: any ) {
+        if ( text !== this.inputTextValue ) {
+            this.inputTextValue = text;
+            this.onChangeCallback( text );
+        }
+    }
+
+    // setters and getter accessor's for attributes
+    @Input() public get propertyId(): string {
+        return this._propertyId;
+    }
+    public set propertyId( value: string ) {
+        if ( value != null ) {
+            this._propertyId = value;
+        }
+    }
+    @Input() public get referId(): string {
+        return this._referId;
+    }
+    public set referId( value: string ) {
+        if ( value != null ) {
+            this._referId = value;
+        }
+    }
+    @Input() public get labelId(): string {
+        return this._labelId;
+    }
+    public set labelId( value: string ) {
+        if ( value != null ) {
+            this._labelId = value;
+        }
+    }
+    @Input() public get disabled(): string {
+        return this._disabled;
+    }
+    public set disabled( value: string ) {
+        if ( value != null ) {
+            this._disabled = value;
+        }
+    }
+    @Input() public get pattern(): any {
+        return this._pattern;
+    }
+    public set pattern( value: any ) {
+        if ( value != null ) {
+            this._pattern = value;
+        }
+    }
+    @Input() public get type(): string {
+        return this._type;
+    }
+    public set type( text: string ) {
+        if ( text != null && text !== this._type ) {
+            this._type = text;
+        }
+    }
+    @Input() public get required(): any {
+        return this._isRequired;
+    }
+    public set required( value: any ) {
+        if ( value != null ) {
+            this.asterisk = true;
+            this._isRequired = value;
+        }
+    }
+    @Input() public get label(): any {
+        return this.inputLabel;
+    }
+    public set label( value: any ) {
+        if ( value != null ) {
+            this.inputLabel = value;
+        }
+    }
+    @Input() public get labelValue(): any {
+        return this._labelValue;
+    }
+    public set labelValue( value: any ) {
+        if ( value != null ) {
+            this._labelValue = value;
+        }
+    }
+    @Input() public get name(): string {
+        return this.nameValue;
+    }
+    public set name( name: string ) {
+        if ( name != null ) {
+            this.nameValue = name;
+            this.outNameValue.emit( name );
+        }
+    }
+    @Input() public get minlength(): any {
+        return this.minLengthValue;
+    }
+    public set minlength( length: any ) {
+        if ( length != null ) {
+            this.minLengthValue = length;
+            this.outMinLengthValue.emit( length );
+        }
+    }
+    @Input() public get maxlength(): any {
+        return this._maxValue;
+    }
+    public set maxlength( length: any ) {
+        if ( length != null ) {
+            this._maxValue = length;
+            this.outMaxLengthValue.emit( length );
+        }
+    }
+    @Input() public get maxValue(): any {
+        return this._maxValue;
+    }
+    public set maxValue( length: any ) {
+        if ( length != null ) {
+            this._maxValue = length;
+            this.outMaxValue.emit( length );
+        }
+    }
+    @Input() public get id(): string {
+        return this._id;
+    }
+    public set id( id: string ) {
+        if ( id != null ) {
+            this._id = id;
+            // this.outIdValue.emit( id );
+        }
+    }
+    @Input() public get labelAlignment(): any {
+        return this.inputLabelAlignment;
+    }
+    public set labelAlignment( name: any ) {
+        if ( name !== 'left' ) {
+            name = 'form-group';
+            this.inputLabelAlignment = name;
+            this.labelAlignmentValue.emit( name );
+        } else {
+            name = 'form-inline';
+            this.inputLabelAlignment = name;
+            this.labelAlignmentValue.emit( name );
+        }
+    }
+    @Input() public get tagClass(): string {
+        return this.inputTagClass;
+    }
+    public set tagClass( style: string ) {
+        if ( style != null ) {
+            this.inputTagClass = style;
+            this.outTagClassValue.emit( style );
+        }
+    }
+    @Input() public get labelClass(): string {
+        return this.inputLabelStyle;
+    }
+    public set labelClass( style: string ) {
+        if ( style != null ) {
+            this.inputLabelStyle = style;
+            this.labelStyleValue.emit( style );
+        }
+    }
+    @Input() public get tagDivClass(): string {
+        return this.tagDivClassValue;
+    }
+    public set tagDivClass( style: string ) {
+        if ( style != null ) {
+            this.tagDivClassValue = style;
+            this.outTagDivClassValue.emit( style );
+        }
+    }
+    @Input() public get divClass(): string {
+        return this._divClassValue;
+    }
+    public set divClass( style: string ) {
+        if ( style != null ) {
+            this._divClassValue = style;
+        }
+    }
+    @Input() public get labelDivClass(): string {
+        return this.labelDivClassValue;
+    }
+    public set labelDivClass( style: string ) {
+        if ( style != null ) {
+            this.labelDivClassValue = style;
+            this.outLabelDivClassValue.emit( style );
+        }
+    }
+    public get chooseLeabelDivClass(): any {
+        if ( this.labelDivClassValue !== null ) {
+            return this.labelDivClassValue;
+        } else if ( this.inputLabelAlignment !== null ) {
+            return this.labelAlignment;
+        }
+        return null;
+    }
+
+    // define the event emitter's
+    @Output() public labelAlignmentValue: EventEmitter<string> = new EventEmitter();
+    @Output() public outTagDivClassValue: EventEmitter<string> = new EventEmitter();
+    @Output() public outTagClassValue: EventEmitter<string> = new EventEmitter();
+    @Output() public labelStyleValue: EventEmitter<string> = new EventEmitter();
+    @Output() public outLabelValue: EventEmitter<any> = new EventEmitter();
+    @Output() public outNameValue: EventEmitter<string> = new EventEmitter();
+    @Output() public outIdValue: EventEmitter<string> = new EventEmitter();
+    @Output() public inputTextChange: EventEmitter<string> = new EventEmitter();
+    @Output() public outMinLengthValue: EventEmitter<any> = new EventEmitter();
+    @Output() public outLabelDivClassValue: EventEmitter<any> = new EventEmitter();
+    @Output() public outMaxLengthValue: EventEmitter<any> = new EventEmitter();
+    @Output() public outMaxValue: EventEmitter<any> = new EventEmitter();
+    @Output() public onFocus: EventEmitter<any> = new EventEmitter();
+    @Output() public blur: EventEmitter<any> = new EventEmitter();
+    @Output() public onKeydown: EventEmitter<any> = new EventEmitter();
+    @Output() public onKeyup: EventEmitter<any> = new EventEmitter();
+
+    public validate( c: FormControl ): any {
+        return ( !this.parseError ) ? null : {
+            jsonParseError: {
+                valid: false,
+            },
+        };
+    }
+
+    // emit the event with the above onKeyDown event, when occurs the keyDown event
+    public onKeyDown( $event ) {
+        return this.onKeydown.emit( $event ); // $event is allows to bind to DOM events and to EventEmitter events. // $event will be emitted to the parent
+    }
+    // set value into inputText variable what changes are made in element
+    writeValue( value: any ) {
+        if ( value !== this.inputTextValue ) {
+            this.inputTextValue = value;
+        }
+    }
+    // registers 'fn' that will be fired what changes are made
+    // this is how we emit the changes back to the form
+    public registerOnChange( fn: any ) {
+        this.onChangeCallback = fn;
+    }
+    // not used, used for touch input
+    public registerOnTouched( fn: any ) {
+        this.onTouchedCallback = fn;
+    }
+    // Set touched on blur
+    onBlur( value ) {
+        this.onTouchedCallback();
+        this.blur.emit( value );
+    }
+
+}
+
+// to avoid duplicate providers from  clashing. And for this communication to work we need to tell 'NG_VALUE_ACCESSOR' token inside angular 2
+// this function used in child components
+export function MakeProvider( type: any ) {
+    return {
+        provide: NG_VALUE_ACCESSOR,
+        useExisting: forwardRef(() => type ),
+        multi: true
+    };
+}
+// Angular recognizes the directive's role in the validation process because the directive registers itself with the 'NG_VALIDATORS' provider,
+// a provider with an extensible collection of validator's.
+// this function used in child components
+export function MakeValidetor( type: any ) {
+    return {
+        provide: NG_VALIDATORS,
+        useExisting: forwardRef(() => type ),
+        multi: true,
+    };
+}
+
+
+
+INPUT
+
+
+
+import { Component, Input, ViewChild, ElementRef, forwardRef, EventEmitter, Output, OnInit } from '@angular/core';
+import { MakeProvider, AbstractTagComponent, MakeValidetor, } from '../../core/helper/abstract-value-accessor';
+import { FormControl, AbstractControlDirective, AbstractControl, NgForm } from '@angular/forms';
+import { CustomTagService } from '../../core/helper/custom-tag-service';
+import { ResourceBundleComponent } from '../../../views/setup/ResourceBundle/ResourceBundle.component';
+import { Router } from '@angular/router';
+
+@Component( {
+    selector: 'sai-input',
+    templateUrl: './sai_input.component.html',
+    styleUrls: [],
+    providers: [
+        MakeProvider( SaiInputTagComponent ),
+        MakeValidetor( SaiInputTagComponent )]
+} )
+export class SaiInputTagComponent extends AbstractTagComponent implements OnInit {
+    private labelDec: any;
+    private error: any;
+    private keys: string[];
+    @ViewChild( 'tagInputElement' )
+    private tagInputElement: NgForm;
+    @Input()
+    public control: AbstractControlDirective | AbstractControl;
+    constructor( private resourceBundle: ResourceBundleComponent, private _router: Router ) {
+        super();
+    }
+    ngOnInit(): void {
+        // tslint:disable-next-line:prefer-const
+        let splitValue: any;
+        // tslint:disable-next-line:prefer-const
+        let sponsorDetails = JSON.parse( localStorage.getItem( 'SetUsers' ) );
+        let userRestriction = sessionStorage.getItem('restrictUser');
+        const appStatus = sessionStorage.getItem( 'withdraw' );
+        if ( this.labelId ) {
+            splitValue = this.labelId.split( '_' );
+        }
+
+
+        if ( sponsorDetails.usrType === 'MEB' || appStatus === 'WD' || userRestriction === 'disableProperties') {
+            if ( this._router.url === '/homepage/application/generalinformation'
+                || this._router.url === '/homepage/application/projecttarget' || this._router.url ===
+                '/homepage/application/buildinginformation' || this._router.url === '/homepage/application/financialfeasibility'
+                || this._router.url === '/homepage/application/scoringcriteria' || this._router.url === '/homepage/application/additionalinfapp' ) {
+
+                this.disabled = 'true';
+            }
+        }
+
+    }
+    shouldShowErrors(): boolean {
+        return this.control &&
+            this.control.errors &&
+            ( this.control.dirty || this.control.touched || this.tagInputElement.touched );
+    }
+
+    listOfErrors(): string[] {
+        return Object.keys( this.control.errors )
+            .map( field => this.getMessage( field, this.control.errors[field] ) );
+    }
+
+    private getMessage( type: string, params: any ) {
+        return AbstractTagComponent.errorMessages[type]( params );
+    }
+}
+
+
+
+
+
+
+
+
+
